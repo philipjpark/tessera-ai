@@ -1,0 +1,22 @@
+{
+  "mcpServers": {
+    "tessera": {
+      "command": "node",
+      "args": ["integrations/ibm-bob/mcp-server/dist/index.js"],
+      "env": {
+        "TESSERA_API_URL": "http://localhost:8000"
+      },
+      "alwaysAllow": [
+        "profile_task",
+        "select_workflow",
+        "begin_execution",
+        "complete_execution",
+        "evaluate_execution",
+        "record_outcome",
+        "get_route_history",
+        "optimize_batch"
+      ],
+      "disabled": false
+    }
+  }
+}

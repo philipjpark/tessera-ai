@@ -1,0 +1,6 @@
+[
+  {"name":"zero","subtotal":"0.00","tax_rate":"0.08875","expected":"0.00"},
+  {"name":"normal_purchase","subtotal":"100.00","tax_rate":"0.05","expected":"105.00"},
+  {"name":"tax_precision","subtotal":"19.99","tax_rate":"0.08875","expected":"21.76"},
+  {"name":"half_cent_boundary","subtotal":"1.005","tax_rate":"0","expected":"1.01"}
+]

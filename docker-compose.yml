@@ -1,0 +1,22 @@
+services:
+  api:
+    build:
+      context: ./services/api
+    environment:
+      TESSERA_DB_PATH: /data/tessera.db
+      TESSERA_BILLING_SERVICE_PATH: /workspace/examples/billing-service
+    volumes:
+      - ./data:/data
+      - ./examples:/workspace/examples
+    ports:
+      - "8000:8000"
+
+  web:
+    build:
+      context: ./apps/web
+    environment:
+      NEXT_PUBLIC_TESSERA_API_URL: http://localhost:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api

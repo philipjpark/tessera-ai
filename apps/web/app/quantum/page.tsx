@@ -1,0 +1,11 @@
+"use client";
+import {useState} from "react";
+import {api} from "@/lib/api";
+
+const payload={tasks:[
+ {task_id:"docs",candidates:[{workflow:"FAST",cost_units:8,latency_units:6,failure_penalty:1,eligible:true},{workflow:"ASSURANCE",cost_units:30,latency_units:25,failure_penalty:.5,eligible:true}]},
+ {task_id:"billing",candidates:[{workflow:"INVESTIGATE",cost_units:25,latency_units:18,failure_penalty:8,eligible:true},{workflow:"ASSURANCE",cost_units:40,latency_units:28,failure_penalty:1,eligible:true}]},
+ {task_id:"concurrency",candidates:[{workflow:"INVESTIGATE",cost_units:28,latency_units:22,failure_penalty:4,eligible:true},{workflow:"ASSURANCE",cost_units:45,latency_units:33,failure_penalty:2,eligible:true}]}
+],max_budget_units:100,weights:{cost:.4,latency:.2,failure:.4},run_qaoa:true};
+
+export default function Quantum(){const [result,setResult]=useState<Record<string,unknown>|null>(null),[busy,setBusy]=useState(false),[err,setErr]=useState("");async function run(){setBusy(true);setErr("");try{setResult(await api.optimize(payload))}catch(e){setErr(String(e))}finally{setBusy(false)}}return <><section className="hero"><div className="eyebrow">Research extension</div><h1>Quantum Lab</h1><p>Compare a small exact classical allocation against an optional Qiskit QAOA experiment on the same problem. The exact solver is the V1 validation reference; QAOA never bypasses hard constraints.</p></section><div className="notice">This lab demonstrates heterogeneous solver integration. It does not claim quantum advantage.</div><section className="two section"><div className="card"><div className="label">Batch allocation problem</div><h2>3 tasks · 6 route candidates</h2><p className="muted">Objective weights: cost 0.4 · latency 0.2 · failure penalty 0.4. Shared normalized budget: 100.</p><button onClick={run} disabled={busy}>{busy?"Running comparison…":"Compare solvers"}</button></div><div className="card"><div className="label">Result</div>{err&&<div className="notice">{err}</div>}{result?<pre>{JSON.stringify(result,null,2)}</pre>:<p className="muted">Run the experiment. If Qiskit extras are absent, the exact solver still returns and the API reports quantum unavailable.</p>}</div></section></>}

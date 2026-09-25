@@ -1,0 +1,13 @@
+{
+  "name": "tessera-ai-v1",
+  "private": true,
+  "workspaces": [
+    "apps/web",
+    "integrations/ibm-bob/mcp-server"
+  ],
+  "scripts": {
+    "web": "npm --workspace @tessera/web run dev",
+    "mcp": "npm --workspace @tessera/ibm-bob-mcp run dev",
+    "typecheck": "npm --workspace @tessera/web run typecheck && npm --workspace @tessera/ibm-bob-mcp run typecheck"
+  }
+}
