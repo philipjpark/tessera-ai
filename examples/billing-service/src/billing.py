@@ -1,13 +1,15 @@
-"""Intentionally imperfect billing implementation for Tessera's demo.
+"""Billing implementation with normalized currency output formatting.
 
-The bug is realistic: financial values are converted to binary floats and Python's
-rounding behavior does not implement the desired ROUND_HALF_UP decimal rule.
-Standard tests miss the half-cent boundary; Tessera's frozen golden fixtures catch it.
+Uses Decimal arithmetic and ROUND_HALF_UP to avoid binary float rounding
+errors and produce consistent half-cent boundary behavior.
 """
+from decimal import Decimal, ROUND_HALF_UP
+
+_CENT = Decimal("0.01")
 
 
 def total_with_tax(subtotal: str, tax_rate: str) -> str:
-    subtotal_f = float(subtotal)
-    tax_f = float(tax_rate)
-    total = subtotal_f * (1.0 + tax_f)
-    return f"{round(total, 2):.2f}"
+    subtotal_d = Decimal(subtotal)
+    tax_d = Decimal(tax_rate)
+    total = subtotal_d * (Decimal("1") + tax_d)
+    return format(total.quantize(_CENT, rounding=ROUND_HALF_UP), "f")
