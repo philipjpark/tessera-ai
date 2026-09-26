@@ -1,0 +1,11 @@
+# Tessera billing benchmark isolation
+
+examples/billing-service/src/billing_reference_fixed.py
+examples/billing-service/golden_cases.json
+services/api/src/tessera_api/evaluator.py
+services/api/tests/test_evaluator.py
+
+# Demo materials that may reveal intended behavior
+examples/billing-service/README.md
+integrations/ibm-bob/DEMO_PROMPTS.md
+docs/DEMO.md
