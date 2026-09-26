@@ -1,113 +1,300 @@
-# Tessera.ai V1 — IBM Bob + Qiskit Hackathon Build
+<p align="center">
+<img src="docs/assets/tessera-logo.png" alt="Tessera logo" width="620" />
+</p>
+<h1 align="center">Tessera.ai</h1>
+<p align="center">
+<strong>Route intelligence. Verify outcomes.</strong>
+</p>
+<p align="center">
+  Outcome-aware workflow orchestration for IBM Bob, with independent verification,
+  persistent outcome memory, and an optional Qiskit optimization extension.
+</p>
 
-**Tagline:** Route intelligence. Verify outcomes.
+---
 
-Tessera.ai is an outcome-aware developer-workflow control plane. For this hackathon V1 it improves a concrete software-maintenance workflow:
+## Overview
 
-`Task -> Profile -> Route -> IBM Bob -> Independent Verification -> Outcome Evidence -> Better Future Route`
+Tessera.ai is an outcome-aware developer-workflow control plane.
+Its core loop is:
 
-The prototype is intentionally narrow. IBM Bob is the software-engineering runtime. Tessera owns workflow selection, policy, independent verification, evidence, and point-in-time outcome memory. Qiskit is an optional heterogeneous-compute experiment for batch workflow allocation; the exact classical solver remains the V1 reference.
+```
+Task → Profile → Route → IBM Bob → Verify → Remember → Better Route
+```
 
-## Why this exists
+IBM Bob is the software-engineering runtime. Tessera owns task profiling, workflow selection, policy, independent verification, evidence, and point-in-time outcome memory.
 
-AI coding agents can produce changes quickly, but the same workflow depth is not appropriate for every task and the agent that generated a change should not be the only system deciding whether it is correct. Tessera makes the execution decision explicit, independently verifies the resulting artifact, and stores failed as well as successful outcomes so later comparable work can be routed differently.
+The V1 prototype focuses on one concrete problem: not every engineering task should receive the same workflow depth, and the system that generated a change should not be the only system deciding whether that change is correct.
 
-## Golden demo
+Tessera therefore separates execution from verification and uses verified historical outcomes to influence later routing decisions.
 
-1. Submit a genuinely low-risk billing-formatting task.
-2. Tessera routes it to `FAST` under the production policy.
-3. IBM Bob performs the change.
-4. Ordinary tests pass, but Tessera's frozen regression fixture catches a rounding edge case.
-5. The failed FAST outcome is stored immutably.
-6. Submit a comparable low-risk task.
-7. The production policy now selects `ASSURANCE` because `PRIOR_FAST_FAILURE` is part of the available point-in-time evidence.
-8. Bob investigates/corrects the behavior; Tessera independently verifies the result.
-9. Optional Quantum Lab compares exact classical allocation and Qiskit QAOA on the same small batch problem.
+---
 
-The important claim is **evidence-informed routing**, not self-learning AI and not quantum advantage.
+## Core primitive
+
+```
+Task
+  ↓
+Profile
+  ↓
+Route
+  ↓
+IBM Bob executes
+  ↓
+Independent verification
+  ↓
+Outcome evidence
+  ↓
+Future routing uses available evidence
+```
+
+The key claim is **evidence-informed routing**.
+Tessera does not claim self-learning behavior, and the Qiskit extension does not claim quantum advantage.
+
+---
+
+## Proven workflow
+
+The current end-to-end flow has been validated against a controlled billing-service example:
+
+1. A genuinely low-risk billing-formatting task is submitted.
+2. Tessera routes it to **FAST** under policy version v1.
+3. IBM Bob performs a targeted change.
+4. Ordinary project tests pass.
+5. Tessera's independent regression evaluation fails on a hidden half-cent boundary.
+6. The failed FAST outcome is preserved as immutable evidence.
+7. A new comparable low-risk task is submitted.
+8. Tessera finds the prior comparable FAST failure in point-in-time history.
+9. FAST becomes ineligible and Tessera selects **ASSURANCE** with reason code `PRIOR_FAST_FAILURE`.
+10. IBM Bob uses the stronger workflow, including investigation via subagent.
+11. The corrected implementation passes ordinary tests and Tessera's independent verification.
+12. The successful ASSURANCE outcome is recorded separately; the original FAST failure remains preserved.
+
+This demonstrates the full loop:
+
+```
+FAST
+→ ordinary tests pass
+→ independent verification fails
+→ failure remembered
+→ comparable task arrives
+→ ASSURANCE selected because of PRIOR_FAST_FAILURE
+→ correction
+→ independent verification passes
+```
+
+---
+
+## Product surfaces
+
+### Web control plane
+
+The Next.js application provides a judge- and operator-facing view of Tessera's state:
+
+- Overview dashboard
+- Causal proof timeline
+- Task creation and routing
+- Workflow eligibility and reason codes
+- IBM Bob execution records
+- Independent verification evidence
+- Persisted outcomes
+- Light and dark themes
+- Optional Quantum Lab
+
+**Routes:**
+
+| Path | Description |
+|------|-------------|
+| `/` | Overview and causal proof |
+| `/tasks` | Create, route, and inspect tasks |
+| `/tasks/[id]` | Evidence timeline for a task |
+| `/quantum` | Classical vs Qiskit allocation comparison |
+
+### IBM Bob integration
+
+Bob connects to Tessera through the project MCP server and can call:
+
+```
+profile_task
+select_workflow
+begin_execution
+complete_execution
+evaluate_execution
+record_outcome
+get_route_history
+optimize_batch
+```
+
+The project also includes a dedicated **Tessera Engineer** mode, project rules, and reusable skills for routing, evaluation, and quantum optimization.
+
+### Qiskit research extension
+
+Qiskit is an optional heterogeneous-compute experiment for batch workflow allocation.
+Tessera expresses a small allocation problem once and compares two solver paths:
+
+```
+                 ┌─ Exact classical solver
+Optimization ────┤
+request          └─ Qiskit QAOA
+                        ↓
+                 candidate assignment
+                        ↓
+                 Tessera validates
+                 hard constraints
+```
+
+The exact classical solver remains the V1 reference because it can prove optimality on the current small problem.
+
+The Qiskit adapter uses:
+- `StatevectorSampler`
+- `MinimumEigenOptimizer`
+- `qiskit_optimization.minimum_eigensolvers.QAOA`
+- `COBYLA`
+
+QAOA output is always treated as a candidate until Tessera validates the assignment against the same hard constraints used for the classical solution.
+
+A validated local comparison produced the same feasible assignment and objective from both solvers, while the exact solver remained dramatically faster and could prove optimality. That result is presented as a backend-agnostic architecture demonstration, not as a quantum-performance claim.
+
+---
 
 ## Repository layout
 
-```text
-apps/web/                         Next.js + TypeScript UI
-services/api/                     FastAPI control plane, SQLite, evaluator
-crates/router/                    Rust deterministic route policy
-integrations/ibm-bob/             IBM Bob-specific runtime integration
-  mcp-server/                     TypeScript MCP bridge
-  README.md                       Bob setup and operating contract
-  DEMO_PROMPTS.md                 prompts for the recorded demonstration
-integrations/qiskit/              isolated Qiskit solver adapter
-  tessera_qiskit/                 QAOA implementation
-  run_qaoa.py                     stdin/stdout adapter used by Tessera
-examples/billing-service/         controlled target codebase + frozen fixtures
-.bob/                             Bob project mode, MCP config, rules, skills
-bob_sessions/                     required Bob session-summary screenshots
-docs/                             architecture, schema, pitch, demo docs
-scripts/                          smoke/demo helpers
 ```
+apps/web/                         Next.js + TypeScript web UI
+services/api/                     FastAPI control plane, SQLite, evaluator
+crates/router/                    Rust deterministic routing policy
+integrations/ibm-bob/             IBM Bob integration
+  mcp-server/                     TypeScript MCP bridge
+integrations/qiskit/              Isolated Qiskit solver adapter
+  tessera_qiskit/                 QAOA implementation
+  run_qaoa.py                     stdin/stdout adapter
+examples/billing-service/         Controlled target codebase + fixtures
+.bob/                             Bob mode, MCP config, rules, and skills
+docs/                             Architecture and product documentation
+scripts/                          Smoke/demo helpers
+```
+
+> **Logo:** place the Tessera logo at `docs/assets/tessera-logo.png`.
+> The README header expects that exact path.
+
+---
 
 ## Start locally
 
 ### 1. API
 
-```bash
+```sh
 cd services/api
 python -m venv .venv
-# activate it
+# activate the virtual environment
 pip install -e '.[dev]'
-pytest -q
-uvicorn tessera_api.main:app --reload --port 8000
+python -m pytest
+python -m uvicorn tessera_api.main:app --port 8000
 ```
 
-### 2. Web + Bob MCP bridge
+The API should be available at: http://127.0.0.1:8000
+
+### 2. Web application
 
 From the repository root:
 
-```bash
+```sh
 npm install
-npm run typecheck
-npm --workspace @tessera/ibm-bob-mcp run build
 npm run web
 ```
 
-### 3. IBM Bob
+The web app should be available at: http://localhost:3000
 
-Open this repository root in Bob IDE. Use the hackathon-provisioned account. Bob should discover:
+### 3. IBM Bob MCP bridge
 
-- `.bob/custom_modes.yaml`
-- `.bob/mcp.json`
-- `.bob/skills/tessera-route/SKILL.md`
-- `.bob/skills/tessera-evaluate/SKILL.md`
-- `.bob/skills/tessera-quantum/SKILL.md`
+From the repository root:
 
-Select **Tessera Engineer**, verify the `tessera` project MCP server is enabled, then use the prompts in `integrations/ibm-bob/DEMO_PROMPTS.md`.
+```sh
+npm --workspace @tessera/ibm-bob-mcp run build
+```
+
+Open the repository root in IBM Bob IDE, select **Tessera Engineer**, and confirm that the workspace MCP server named `tessera` is **Connected**.
+
+The project-level MCP configuration lives at: `.bob/mcp.json`
 
 ### 4. Optional Qiskit integration
 
-The Qiskit adapter is deliberately isolated from API startup.
+Create an isolated environment if desired:
 
-```bash
+```sh
 python -m venv .venv-qiskit
 # activate it
 pip install -r integrations/qiskit/requirements.txt
+```
+
+Run the adapter directly:
+
+```sh
 python integrations/qiskit/run_qaoa.py < integrations/qiskit/example_request.json
 ```
 
-The current adapter targets the modern Qiskit Optimization API: `StatevectorSampler`, `MinimumEigenOptimizer`, `qiskit_optimization.minimum_eigensolvers.QAOA`, and `COBYLA`.
+On PowerShell:
 
-## Validation principles
+```powershell
+Get-Content integrations\qiskit\example_request.json -Raw |
+  python integrations\qiskit\run_qaoa.py
+```
 
-- Never invent Bob model IDs, token counts, internal routes, or costs.
-- Never rewrite a failed attempt into a success; create a new execution.
-- Never let Bob self-certify. Tessera's deterministic evaluator owns the verdict.
-- Hard security/review requirements are eligibility constraints, not soft optimizer penalties.
-- Historical routing may only use evidence available at decision time.
-- QAOA output is a candidate until Tessera validates it against the same hard constraints as the classical solution.
+Or run the API + web application and open: http://localhost:3000/quantum
 
-## Hackathon evidence
+---
 
-Each participant should save the required Bob IDE task-session summary screenshots under `bob_sessions/`. See `bob_sessions/README.md` for filenames and a suggested capture plan.
+## Validation
 
-## External AI-IDE system prompt
+The current build has been validated with:
 
-The long build prompt is intentionally **not embedded in this repository**. Use the separately delivered `TESSERA_EXTERNAL_AI_IDE_SYSTEM_PROMPT.md` in your coding IDE. It contains the product mission, engineering boundaries, Bob/Qiskit integration rules, 48-hour priorities, acceptance criteria, and detailed continuation plan.
+| Check | Result |
+|-------|--------|
+| API tests | 8/8 passed |
+| Web TypeScript check | passed |
+| Next.js production build | passed |
+| IBM Bob MCP build | passed |
+| IBM Bob MCP typecheck | passed |
+| Tessera independent eval | passed |
+| Qiskit QAOA adapter | feasible result returned |
+
+The validation model intentionally keeps failure evidence immutable: a failed execution is never rewritten into a success. Corrections create new executions, evaluations, and outcomes.
+
+---
+
+## Design invariants
+
+- IBM Bob executes software-engineering work; Tessera controls routing and verification.
+- The agent that generated a change does not self-certify it.
+- Failed executions remain immutable evidence.
+- Corrections create new execution and outcome records.
+- Historical routing uses only evidence available at decision time.
+- Hard requirements are eligibility constraints, not soft preferences.
+- `PRIOR_FAST_FAILURE` can make FAST ineligible for a comparable later task.
+- Qiskit is optional and cannot block core API startup.
+- QAOA assignments are candidates until Tessera validates hard constraints.
+- No quantum advantage claim is made.
+
+---
+
+## Technology
+
+| Component | Role |
+|-----------|------|
+| IBM Bob | Engineering runtime, modes, subagents, MCP |
+| FastAPI | Tessera API / control plane |
+| SQLite | Persisted routing, execution, evaluation, and outcome records |
+| Next.js + TypeScript | Web control plane |
+| Rust | Deterministic routing-policy implementation |
+| Qiskit Optimization | Optional QAOA research extension |
+
+---
+
+## Status
+
+Tessera V1 currently demonstrates a complete outcome-aware routing loop:
+
+```
+Route → Execute → Verify → Remember → Re-route
+```
+
+The next evolution is to generalize the same control-plane pattern across additional agents, models, tools, and computational backends while keeping verification and policy enforcement independent of the execution layer.
