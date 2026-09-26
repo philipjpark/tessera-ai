@@ -173,8 +173,6 @@ docs/                             Architecture and product documentation
 scripts/                          Smoke/demo helpers
 ```
 
-> **Logo:** place the Tessera logo at `docs/assets/tessera-logo.png`.
-> The README header expects that exact path.
 
 ---
 
