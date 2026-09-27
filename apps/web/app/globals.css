@@ -356,8 +356,68 @@ button.secondary:hover { border-color: var(--line-strong); background: var(--pan
 
 /* ── Reason code descriptions ── */
 .reason-card { background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+.reason-card.highlight { background: var(--warn-dim); border-color: var(--warn); }
+.reason-card.highlight .reason-name { color: var(--warn); }
 .reason-name { font-size: 12px; font-weight: 700; font-family: ui-monospace, monospace; color: var(--text); }
 .reason-desc { font-size: 12px; color: var(--muted); margin-top: 3px; line-height: 1.5; }
+.reason-card.highlight .reason-desc { color: var(--warn); opacity: .85; }
+
+/* ── Demo status bar (workflow + verification at-a-glance) ── */
+.demo-status-bar {
+  display: flex; flex-wrap: wrap; gap: 12px; align-items: stretch;
+  margin: 0 0 28px; padding: 0;
+}
+.demo-status-cell {
+  flex: 1 1 200px; background: var(--panel);
+  border: 1px solid var(--line); border-radius: var(--radius-lg);
+  padding: 16px 20px; display: flex; flex-direction: column; gap: 4px;
+  transition: border-color .15s;
+}
+.demo-status-cell .dsc-label {
+  font-size: 10px; font-weight: 700; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--muted);
+}
+.demo-status-cell .dsc-value {
+  font-size: 28px; font-weight: 900; letter-spacing: -.03em; line-height: 1.1;
+}
+.demo-status-cell.wf-FAST { border-color: var(--fast-color); background: var(--fast-bg); }
+.demo-status-cell.wf-FAST .dsc-value { color: var(--fast-color); }
+.demo-status-cell.wf-INVESTIGATE { border-color: var(--investigate-color); background: var(--investigate-bg); }
+.demo-status-cell.wf-INVESTIGATE .dsc-value { color: var(--investigate-color); }
+.demo-status-cell.wf-ASSURANCE { border-color: var(--assurance-color); background: var(--assurance-bg); }
+.demo-status-cell.wf-ASSURANCE .dsc-value { color: var(--assurance-color); }
+.demo-status-cell.verify-passed { border-color: var(--good-border); background: var(--good-bg); }
+.demo-status-cell.verify-passed .dsc-value { color: var(--accent); }
+.demo-status-cell.verify-failed { border-color: var(--bad-border); background: var(--bad-bg); }
+.demo-status-cell.verify-failed .dsc-value { color: var(--bad); }
+.demo-status-cell.verify-pending { border-color: var(--line); }
+.demo-status-cell.verify-pending .dsc-value { color: var(--muted); font-size: 20px; }
+.demo-status-cell .dsc-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+/* ── Verification banner ── */
+.verify-banner {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  border-radius: var(--radius); padding: 16px 20px;
+  border: 2px solid transparent;
+}
+.verify-banner.passed {
+  background: var(--good-bg); border-color: var(--good-border);
+}
+.verify-banner.failed {
+  background: var(--bad-bg); border-color: var(--bad-border);
+}
+.verify-banner .vb-verdict {
+  font-size: 24px; font-weight: 900; letter-spacing: -.02em; flex-shrink: 0;
+}
+.verify-banner.passed .vb-verdict { color: var(--accent); }
+.verify-banner.failed .vb-verdict { color: var(--bad); }
+.verify-banner .vb-meta { display: flex; flex-direction: column; gap: 3px; }
+.verify-banner .vb-tag {
+  display: inline-flex; align-items: center;
+  background: var(--panel2); border: 1px solid var(--line);
+  border-radius: 6px; padding: 2px 9px;
+  font-size: 11px; font-weight: 600; color: var(--muted);
+}
 
 /* ── Misc utilities ── */
 .muted { color: var(--muted); }

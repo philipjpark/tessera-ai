@@ -18,6 +18,9 @@ const REASON_DESCRIPTIONS: Record<string, string> = {
   RUST_ROUTER_FALLBACK: "Python fallback router used — decision is identical",
 };
 
+// ── Reason codes that get a highlighted treatment ─────────────────────────
+const HIGHLIGHT_CODES = new Set(["PRIOR_FAST_FAILURE", "BEHAVIOR_PRESERVATION_REQUIRED", "HUMAN_APPROVAL_REQUIRED", "HIGH_RISK"]);
+
 // ── Small helpers ─────────────────────────────────────────────────────────
 function WorkflowBadge({ wf }: { wf?: string }) {
   if (!wf) return <span className="badge neutral">—</span>;
@@ -119,6 +122,14 @@ export default function TaskDetail() {
     ? (latestOutcome?.verified ? "done" : "fail")
     : "pending";
 
+  // Derive top-level verify state from evaluation OR persisted outcomes
+  const verifyState: "passed" | "failed" | "pending" =
+    evaluation
+      ? (evaluation.verdict === "passed" ? "passed" : "failed")
+      : allOutcomes.length > 0
+        ? (latestOutcome?.verified ? "passed" : "failed")
+        : "pending";
+
   return (
     <>
       {/* ── Hero ── */}
@@ -129,6 +140,59 @@ export default function TaskDetail() {
       </section>
 
       {msg && <div className="notice info">{msg}</div>}
+
+      {/* ── Demo status bar ── */}
+      <div className="demo-status-bar">
+        {/* Selected workflow */}
+        <div className={`demo-status-cell${latest ? ` wf-${latest.workflow}` : ""}`}>
+          <div className="dsc-label">Selected workflow</div>
+          <div className="dsc-value">{latest?.workflow ?? "—"}</div>
+          {latest && (
+            <div className="dsc-sub">
+              {latest.forced_experiment ? "Controlled experiment" : "Production policy"}
+              {" · "}decision <span className="mono">{latest.id.slice(-8)}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Reason codes */}
+        <div className="demo-status-cell" style={{ flex: "2 1 300px" }}>
+          <div className="dsc-label">Why this workflow</div>
+          {latest ? (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6 }}>
+              {latest.reason_codes.map(code => (
+                <span
+                  key={code}
+                  style={{
+                    display: "inline-flex", alignItems: "center",
+                    fontFamily: "ui-monospace,monospace", fontSize: 12, fontWeight: 700,
+                    padding: "4px 10px", borderRadius: 6,
+                    background: HIGHLIGHT_CODES.has(code) ? "var(--warn-dim)" : "var(--panel2)",
+                    border: `1px solid ${HIGHLIGHT_CODES.has(code) ? "var(--warn)" : "var(--line)"}`,
+                    color: HIGHLIGHT_CODES.has(code) ? "var(--warn)" : "var(--text)",
+                  }}
+                >
+                  {HIGHLIGHT_CODES.has(code) ? "⚠ " : ""}{code}
+                </span>
+              ))}
+              {latest.reason_codes.length === 0 && <span className="muted" style={{ fontSize: 13 }}>—</span>}
+            </div>
+          ) : (
+            <div className="dsc-value" style={{ fontSize: 20 }}>—</div>
+          )}
+        </div>
+
+        {/* Verification status */}
+        <div className={`demo-status-cell verify-${verifyState}`}>
+          <div className="dsc-label">Verification</div>
+          <div className="dsc-value">
+            {verifyState === "passed" ? "✓ PASSED" : verifyState === "failed" ? "✗ FAILED" : "Pending"}
+          </div>
+          <div className="dsc-sub">
+            {verifyState === "pending" ? "Not yet evaluated" : "Tessera independent evaluator"}
+          </div>
+        </div>
+      </div>
 
       {/* ── Profile metadata ── */}
       {task && (
@@ -169,19 +233,40 @@ export default function TaskDetail() {
         <ETLStep dotCls={routeDot} heading="02 · Route">
           {latest ? (
             <div className="etl-card">
-              <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-                <div className={`wf-metric ${latest.workflow}`}>{latest.workflow}</div>
+              {/* Prominent workflow heading */}
+              <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", marginBottom: 10 }}>
+                <div
+                  className={`wf-metric ${latest.workflow}`}
+                  style={{
+                    fontSize: 36, padding: "4px 16px",
+                    background: latest.workflow === "FAST" ? "var(--fast-bg)"
+                      : latest.workflow === "ASSURANCE" ? "var(--assurance-bg)"
+                      : "var(--investigate-bg)",
+                    borderRadius: 10,
+                    border: `2px solid ${latest.workflow === "FAST" ? "var(--fast-color)"
+                      : latest.workflow === "ASSURANCE" ? "var(--assurance-color)"
+                      : "var(--investigate-color)"}`,
+                  }}
+                >
+                  {latest.workflow}
+                </div>
                 {latest.forced_experiment && <span className="badge warn">Controlled experiment</span>}
               </div>
-              <p style={{ fontSize: 13, marginTop: 8 }}>{latest.rationale}</p>
+              <p style={{ fontSize: 13, marginTop: 0 }}>{latest.rationale}</p>
+              {/* Reason codes with highlight for impactful ones */}
               <div style={{ marginTop: 12, display: "flex", flexWrap: "wrap", gap: 6 }}>
                 {latest.reason_codes.map(code => (
-                  <div key={code} style={{ display: "inline-flex", flexDirection: "column", gap: 2, background: "var(--panel2)", border: "1px solid var(--line)", borderRadius: 8, padding: "6px 10px", maxWidth: 320 }}>
-                    <span style={{ fontFamily: "ui-monospace,monospace", fontSize: 11, fontWeight: 700 }}>{code}</span>
-                    <span style={{ fontSize: 11, color: "var(--muted)" }}>{REASON_DESCRIPTIONS[code] ?? ""}</span>
+                  <div
+                    key={code}
+                    className={`reason-card${HIGHLIGHT_CODES.has(code) ? " highlight" : ""}`}
+                    style={{ display: "inline-flex", flexDirection: "column", gap: 3, maxWidth: 340 }}
+                  >
+                    <span className="reason-name">{HIGHLIGHT_CODES.has(code) ? "⚠ " : ""}{code}</span>
+                    <span className="reason-desc">{REASON_DESCRIPTIONS[code] ?? ""}</span>
                   </div>
                 ))}
               </div>
+              {/* Candidate scores */}
               <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
                 {Object.entries(latest.candidate_scores).map(([k, v]) => (
                   <div key={k} style={{ background: "var(--panel2)", border: "1px solid var(--line)", borderRadius: 8, padding: "6px 10px", minWidth: 90 }}>
@@ -191,7 +276,7 @@ export default function TaskDetail() {
                   </div>
                 ))}
               </div>
-              <div style={{ marginTop: 12 }}>
+              <div style={{ marginTop: 14 }}>
                 <button onClick={startExec} disabled={busy || !latest}>
                   Register IBM Bob execution
                 </button>
@@ -235,15 +320,22 @@ export default function TaskDetail() {
         {/* 4. INDEPENDENT VERIFICATION */}
         <ETLStep dotCls={verifyDot} heading="04 · Independent verification">
           {evaluation ? (
-            <div className={`etl-card ${evaluation.verdict === "passed" ? "pass" : "fail"}`}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={{ fontSize: 18, fontWeight: 800, color: evaluation.verdict === "passed" ? "var(--accent)" : "var(--bad)" }}>
+            <div className="etl-card" style={{ padding: 0, overflow: "hidden" }}>
+              {/* Full-width verdict banner */}
+              <div className={`verify-banner ${evaluation.verdict === "passed" ? "passed" : "failed"}`}>
+                <span className="vb-verdict">
                   {evaluation.verdict === "passed" ? "✓ PASSED" : "✗ FAILED"}
                 </span>
-                <span className="pill" style={{ fontSize: 11 }}>Agent cannot self-certify</span>
+                <div className="vb-meta">
+                  <span className="vb-tag">Tessera independent evaluator · Agent cannot self-certify</span>
+                  <span style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
+                    Execution <span className="mono">{evaluation.execution_id.slice(-8)}</span>
+                    {" · "}{ts(evaluation.evaluated_at)}
+                  </span>
+                </div>
               </div>
               {failures.length > 0 && (
-                <div style={{ marginTop: 14, display: "grid", gap: 8 }}>
+                <div style={{ padding: "14px 20px", display: "grid", gap: 8 }}>
                   {failures.map(f => (
                     <div className="failure-card" key={f.name}>
                       <div>
@@ -263,17 +355,20 @@ export default function TaskDetail() {
                 </div>
               )}
               {failures.length === 0 && evaluation.verdict === "passed" && (
-                <p style={{ marginTop: 8, fontSize: 13 }}>All frozen regression cases passed.</p>
+                <p style={{ padding: "10px 20px 14px", fontSize: 13 }}>All frozen regression cases passed.</p>
               )}
             </div>
           ) : allOutcomes.length > 0 && latestOutcome ? (
-            <div className={`etl-card ${latestOutcome.verified ? "pass" : "fail"}`}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: latestOutcome.verified ? "var(--accent)" : "var(--bad)" }}>
-                {latestOutcome.verified ? "✓ Previously verified" : "✗ Previously failed"}
+            <div className={`verify-banner ${latestOutcome.verified ? "passed" : "failed"}`} style={{ borderRadius: "var(--radius)" }}>
+              <span className="vb-verdict">
+                {latestOutcome.verified ? "✓ PASSED" : "✗ FAILED"}
+              </span>
+              <div className="vb-meta">
+                <span className="vb-tag">Previously recorded outcome</span>
+                <span style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
+                  Re-run the workflow to get fresh evaluation details.
+                </span>
               </div>
-              <p style={{ fontSize: 12, color: "var(--muted)", marginTop: 4 }}>
-                Re-run the workflow to get fresh evaluation details.
-              </p>
             </div>
           ) : (
             <div className="etl-card muted">
