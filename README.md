@@ -296,3 +296,13 @@ Route → Execute → Verify → Remember → Re-route
 ```
 
 The next evolution is to generalize the same control-plane pattern across additional agents, models, tools, and computational backends while keeping verification and policy enforcement independent of the execution layer.
+
+---
+
+## Presentation
+
+[View the Tessera.ai slide deck (PDF)](./Tessera_AI_Slides.pdf)
+
+## Live Demo
+
+[Open the live Tessera.ai app](https://tessera-ai.netlify.app/)
